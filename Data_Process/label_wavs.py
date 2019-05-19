@@ -136,3 +136,4 @@ def get_wav_path(wav_lists, label_name, index, wav_dir, category):
   sub_dir = label_lists['dir']
   full_path = os.path.join(wav_dir, sub_dir, base_name)
   return full_path
+# TODo：test the get_wav_path function
