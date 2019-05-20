@@ -7,7 +7,7 @@
 @Software: PyCharm
 @File: label_wavs.py
 @Time: 2019/5/11 21:00
-@Overview:
+@Overview: The file is to label wav files and save or load those files with TFRecord data format.
 """
 import argparse
 import collections
@@ -17,6 +17,10 @@ import os.path
 import random
 import re
 import sys
+import pathlib
+from scipy.io import wavfile
+from scipy import signal
+import sys,time
 
 import numpy as np
 import tensorflow as tf
@@ -32,6 +36,7 @@ def ensure_dir_exists(dir_name):
   if not os.path.exists(dir_name):
     os.makedirs(dir_name)
 
+# Create wav file list in retrain.py in tensorflow hub
 def create_wav_list(wav_dir, test_precentage, validation_percentage):
     """Build a list of training wav files from the file system. Split wavs in the sub dir and return a data structure describing the lists of wavs for each label and their path.
 
@@ -77,7 +82,8 @@ def create_wav_list(wav_dir, test_precentage, validation_percentage):
         validation_wavs = []
         for file_name in file_list:
             base_name = file_name
-
+            file_path_split = base_name.split('\\')
+            base_name = os.path.join(file_path_split[4], file_path_split[5])
             # Ignore anything after '_nohash_' in the file name
             hash_name = re.sub(r'_nohash_.*$', '', file_name)
             # This looks a bit magical, but we need to decide whether this file should
@@ -105,8 +111,46 @@ def create_wav_list(wav_dir, test_precentage, validation_percentage):
         }
         return result
 
-voxceleb_dir = '../Dataset/wav'
-create_wav_list(voxceleb_dir, 20, 20)
+# Create wav files list for TFRecord in Tensorflow tutorials
+def create_wav_list(wav_dir):
+    data_root = pathlib.Path(wav_dir)
+
+    all_wav_path = list(data_root.glob('*\*\*'))
+    all_wav_path = [str(path) for path in all_wav_path]
+
+    spk_label = sorted(item.name for item in data_root.glob('*/') if item.is_dir())
+
+    # Add index for all speakers label
+    label_to_index = dict((name, index) for index, name in enumerate(spk_label))
+
+    all_wav_labels = [label_to_index[pathlib.Path(path).parent.parent.name]
+                        for path in all_wav_path]
+
+    wav_spec = []
+    wav_path = all_wav_path[0]
+    #for index, wav_path in enumerate(all_wav_path):
+
+    sample_rate, samples = wavfile.read(wav_path)
+    frequencies, times, spectrogram = signal.spectrogram(x=samples, window='hamming', nfft=1024, fs=sample_rate)
+    frequencies = np.array(frequencies)
+    times = np.array(times)
+    spectrogram = np.array(spectrogram)
+
+    spec = np.concatenate((times, frequencies, spectrogram))
+    wav_spec.append(spec)
+
+        # sys.stdout.write("\rProcessing Wav Data: [%s%s] %d%%" % ('■'*int(50*index/len(all_wav_path)), ' '*(50 - int(50*index/len(all_wav_path))), 100*index/len(all_wav_path)))
+        # sys.stdout.flush()
+
+    feature_dataset = tf.data.Dataset.from_tensor_slices(([1], wav_spec))
+    for f0,f1 in feature_dataset.take(1):
+        print(f0)
+        print(f1)
+    # print(feature.shape())
+
+
+voxceleb_dir = '..\Dataset\wav'
+wav_lists = create_wav_list(voxceleb_dir)
 
 
 
@@ -115,7 +159,7 @@ def get_wav_path(wav_lists, label_name, index, wav_dir, category):
 
   :param wav_lists: OrderedDict of training wavs for each label.
   :param label_name: Label string we want to get an wav for.
-  :param index: Int offset of the wav we want. This will be moduloed by the available number of wavs for the label, so it can be arbitrarily large.
+  :param index: Int offset of the wav we want. This will be moduled by the available number of wavs for the label, so it can be arbitrarily large.
   :param wav_dir: Root folder string of the sub folders containing the training wavs.
   :param category: Name string of set to pull wavs from - training, testing, or
     validation.
@@ -137,3 +181,5 @@ def get_wav_path(wav_lists, label_name, index, wav_dir, category):
   full_path = os.path.join(wav_dir, sub_dir, base_name)
   return full_path
 # TODo：test the get_wav_path function
+#full_path = get_wav_path(wav_lists, 'id10001', 1, wav_dir=voxceleb_dir, category='training')
+# print(full_path)
