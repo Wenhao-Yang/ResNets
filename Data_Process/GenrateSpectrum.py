@@ -20,14 +20,17 @@ import tensorflow
 
 
 sample_rate, samples = wavfile.read('../Dataset/wav/id10001/1zcIwhmdeo4/00001.wav')
-frequencies, times, spectrogram = signal.spectrogram(x=samples, window='hamming', nfft=1024, fs=sample_rate)
+# samples = samples[:3*sample_rate]
+print(samples.shape)
+frequencies, times, spectrogram = signal.spectrogram(x=samples, fs=sample_rate, window=signal.hamming(25*16), noverlap=15*16, nfft=1024)
+frequencies, times, spectrogram = frequencies[:], times[:300], spectrogram[:,:300]
 plt.pcolormesh(times, frequencies, spectrogram)
-plt.axis('off')
-plt.gca().xaxis.set_major_locator(plt.NullLocator())
-plt.gca().yaxis.set_major_locator(plt.NullLocator())
-plt.subplots_adjust(top=1,bottom=0,left=0,right=1,hspace=0,wspace=0)
-plt.savefig('..\Dataset\wav\id10001\\1zcIwhmdeo4\\00001.png', format='png',  dpi=300)
-# print(spectrogram)
+# plt.axis('off')
+# plt.gca().xaxis.set_major_locator(plt.NullLocator())
+# plt.gca().yaxis.set_major_locator(plt.NullLocator())
+#plt.subplots_adjust(top=1,bottom=0,left=0,right=1,hspace=0,wspace=0)
+plt.savefig('../Dataset/wav/id10001/1zcIwhmdeo4/00001.png', format='png',  dpi=300)
+print(spectrogram.shape)
 #plt.imshow(spectrogram)
 #plt.ylabel('Frequency [Hz]')
 #plt.xlabel('Time [sec]')
