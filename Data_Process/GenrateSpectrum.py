@@ -14,24 +14,48 @@
 
 """
 from scipy import signal
-import matplotlib.pyplot as plt
 from scipy.io import wavfile
-import tensorflow
+import os
+import numpy as np
 
+def GenerateSpect(wav_path, windowsize=25, stride=20, nfft=1024):
+    if not os.path.exists(wav_path):
+        raise ValueError('wav file does not exist.')
 
-sample_rate, samples = wavfile.read('../Dataset/wav/id10001/1zcIwhmdeo4/00001.wav')
+    sample_rate, samples = wavfile.read(wav_path)
+    sample_rate_norm = int(sample_rate / 1e3)
+    frequencies, times, spectrogram = signal.spectrogram(x=samples, fs=sample_rate, window=signal.hamming(windowsize * sample_rate_norm), noverlap= (windowsize-stride) * sample_rate_norm, nfft=nfft)
+
+    spectrogram = spectrogram[:, :300]
+    while spectrogram.shape[1]<300:
+        # Copy padding
+        spectrogram = np.concatenate((spectrogram, spectrogram), axis=1)
+
+        # raise ValueError("The dimension of spectrogram is less than 300")
+    spectrogram = spectrogram[:, :300]
+    return spectrogram
+
+# Plotting the spectrugram:
+
+# sample_rate, samples = wavfile.read('../Dataset/wav/id10001/1zcIwhmdeo4/00001.wav')
+
+# Select the first 3s audio
 # samples = samples[:3*sample_rate]
-print(samples.shape)
-frequencies, times, spectrogram = signal.spectrogram(x=samples, fs=sample_rate, window=signal.hamming(25*16), noverlap=15*16, nfft=1024)
-frequencies, times, spectrogram = frequencies[:], times[:300], spectrogram[:,:300]
-plt.pcolormesh(times, frequencies, spectrogram)
-# plt.axis('off')
-# plt.gca().xaxis.set_major_locator(plt.NullLocator())
-# plt.gca().yaxis.set_major_locator(plt.NullLocator())
-#plt.subplots_adjust(top=1,bottom=0,left=0,right=1,hspace=0,wspace=0)
-plt.savefig('../Dataset/wav/id10001/1zcIwhmdeo4/00001.png', format='png',  dpi=300)
-print(spectrogram.shape)
-#plt.imshow(spectrogram)
-#plt.ylabel('Frequency [Hz]')
-#plt.xlabel('Time [sec]')
-#plt.show()
+
+# frequencies, times, spectrogram = signal.spectrogram(x=samples, fs=sample_rate, window=signal.hamming(25*16), noverlap=15*16, nfft=1024)
+# frequencies, times, spectrogram = frequencies[:], times[:300], spectrogram[:,:300]
+# plt.pcolormesh(times, frequencies, spectrogram)
+
+# Hide the axises
+# # plt.axis('off')
+# # plt.gca().xaxis.set_major_locator(plt.NullLocator())
+# # plt.gca().yaxis.set_major_locator(plt.NullLocator())
+# #plt.subplots_adjust(top=1,bottom=0,left=0,right=1,hspace=0,wspace=0)
+
+# Save the plot as a image file
+# plt.savefig('../Dataset/wav/id10001/1zcIwhmdeo4/00001.png', format='png',  dpi=300)
+
+# plt.imshow(spectrogram)
+# plt.ylabel('Frequency [Hz]')
+# plt.xlabel('Time [sec]')
+# #plt.show()

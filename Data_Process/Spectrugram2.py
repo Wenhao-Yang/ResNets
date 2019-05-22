@@ -41,14 +41,15 @@ framelength = 0.025  # 帧长20~30ms
 framesize = 1024  # 每帧点数 N = t*fs,通常情况下值为256或512,要与NFFT相等
 
 sec3_data=waveData[0]
-sec3_data=sec3_data[:3*framerate]
+# sec3_data=sec3_data[:3*framerate]
 NFFT = framesize  # NFFT必须与时域的点数framsize相等，即不补零的FFT
-overlapSize = 0.015 / 0.025* framesize  # 重叠部分采样点数overlapSize约为每帧点数的1/3~1/2
+overlapSize = NFFT - 0.010 / 0.025 * 0.025 * framerate  # 重叠部分采样点数overlapSize约为每帧点数的1/3~1/2
 overlapSize = int(round(overlapSize))  # 取整
+window_length = 0.025 * framerate
 spectrum, freqs, ts, fig = plt.specgram(sec3_data,
                                         NFFT=NFFT,
                                         Fs=framerate,
-                                        window=np.hamming(M=framesize),
+                                        window=np.hamming(M=window_length),
                                         noverlap=overlapSize,
                                         mode='default',
                                         scale_by_freq=True,

@@ -21,11 +21,16 @@ import pathlib
 from scipy.io import wavfile
 from scipy import signal
 import sys,time
+import IPython.display as display
 
 import numpy as np
 import tensorflow as tf
+tf.enable_eager_execution()
+from Data_Process import GenrateSpectrum
 
 MAX_NUM_WAVS_PER_SPK = 2 ** 27 - 1  # ~134M
+VOXCELEB_DIR = '../Dataset/wav'
+TFRECORD_FILE = 'wav.tfrecord'
 
 def ensure_dir_exists(dir_name):
   """Makes sure the folder exists on disk.
@@ -111,11 +116,39 @@ def create_wav_list(wav_dir, test_precentage, validation_percentage):
         }
         return result
 
+
 # Create wav files list for TFRecord in Tensorflow tutorials
-def create_wav_list(wav_dir):
+def _bytes_feature(value):
+  """Returns a bytes_list from a string / byte."""
+  return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+def _float_feature(value):
+  """Returns a float_list from a float / double."""
+  return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
+
+def _int64_feature(value):
+  """Returns an int64_list from a bool / enum / int / uint."""
+  return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
+
+def feature_map(label, value):
+    """
+    Return a float list from a float/double
+    :param value:
+    :return:
+    """
+    feature = {
+        'label': _int64_feature(label),
+        'spect': _bytes_feature(value)
+    }
+    return tf.train.Example(features=tf.train.Features(feature=feature))
+
+# Create tfrecord file for all wav files, the data format will be {label:lebel, spectrugram: spec}
+def write_wav_tfrecord(wav_dir, tfrecord_file):
+    if os.path.exists(tfrecord_file):
+        return "File already existed!"
     data_root = pathlib.Path(wav_dir)
 
-    all_wav_path = list(data_root.glob('*\*\*'))
+    all_wav_path = list(data_root.glob('*/*/*.wav'))
     all_wav_path = [str(path) for path in all_wav_path]
 
     spk_label = sorted(item.name for item in data_root.glob('*/') if item.is_dir())
@@ -125,61 +158,46 @@ def create_wav_list(wav_dir):
 
     all_wav_labels = [label_to_index[pathlib.Path(path).parent.parent.name]
                         for path in all_wav_path]
+    wav_spec_list = np.zeros([len(all_wav_labels), 513, 300])
 
-    wav_spec = []
-    wav_path = all_wav_path[0]
-    #for index, wav_path in enumerate(all_wav_path):
+    # wav_path = all_wav_path[0]
+    with tf.python_io.TFRecordWriter(tfrecord_file) as writer:
+        for index, wav_path in enumerate(all_wav_path):
 
-    sample_rate, samples = wavfile.read(wav_path)
-    frequencies, times, spectrogram = signal.spectrogram(x=samples, window='hamming', nfft=1024, fs=sample_rate)
-    frequencies = np.array(frequencies)
-    times = np.array(times)
-    spectrogram = np.array(spectrogram)
+            spec = GenrateSpectrum.GenerateSpect(wav_path)
+            wav_spec_list[index]=spec
+            spect_str = spec.tostring()
 
-    spec = np.concatenate((times, frequencies, spectrogram))
-    wav_spec.append(spec)
+            feature_meta = feature_map(all_wav_labels[index], spect_str)
+            writer.write(feature_meta.SerializeToString())
 
-        # sys.stdout.write("\rProcessing Wav Data: [%s%s] %d%%" % ('■'*int(50*index/len(all_wav_path)), ' '*(50 - int(50*index/len(all_wav_path))), 100*index/len(all_wav_path)))
-        # sys.stdout.flush()
+            # Progress Bar
+            sys.stdout.write("\rProcessing Wav Data: [%s%s] %d%%" % ('#'*int(50*index/len(all_wav_path)), '='*(50 - int(50*index/len(all_wav_path))), 100*index/len(all_wav_path)))
+            sys.stdout.flush()
 
-    feature_dataset = tf.data.Dataset.from_tensor_slices(([1], wav_spec))
-    for f0,f1 in feature_dataset.take(1):
-        print(f0)
-        print(f1)
-    # print(feature.shape())
+    # for f0,f1 in feature_dataset:
+    #     print(f0)
+    #     print(f1)
+    # print(wav_spec_list.shape())
 
+def read_from_tfrecord(tfrecord_path):
+    raw_wav_dataset = tf.data.TFRecordDataset(tfrecord_path)
 
-voxceleb_dir = '..\Dataset\wav'
-wav_lists = create_wav_list(voxceleb_dir)
+    # Create a dictionary describing the wav spectrugram features.
+    wav_feature_description = {
+        'label': tf.FixedLenFeature([], tf.int64),
+        'spect': tf.FixedLenFeature([], tf.string),
+    }
 
+    def _parse_spect_function(example_proto):
+        # Parse the input tf.Example proto using the dictionary above.
+        return tf.parse_single_example(example_proto, wav_feature_description)
 
+    parsed_spect_dataset = raw_wav_dataset.map(_parse_spect_function)
 
-def get_wav_path(wav_lists, label_name, index, wav_dir, category):
-  """Returns a path to an radio for a label at the given index.
+    for spect in parsed_spect_dataset:
+        spectrugram = spect['spect'].numpy()
+        display.display(display.Image(data=spectrugram))
 
-  :param wav_lists: OrderedDict of training wavs for each label.
-  :param label_name: Label string we want to get an wav for.
-  :param index: Int offset of the wav we want. This will be moduled by the available number of wavs for the label, so it can be arbitrarily large.
-  :param wav_dir: Root folder string of the sub folders containing the training wavs.
-  :param category: Name string of set to pull wavs from - training, testing, or
-    validation.
-  :return: File system path string to an image that meets the requested parameters.
-  """
-
-  if label_name not in wav_lists:
-    tf.logging.fatal('Label does not exist %s.', label_name)
-  label_lists = wav_lists[label_name]
-  if category not in label_lists:
-    tf.logging.fatal('Category does not exist %s.', category)
-  category_list = label_lists[category]
-  if not category_list:
-    tf.logging.fatal('Label %s has no wavs in the category %s.',
-                     label_name, category)
-  mod_index = index % len(category_list)
-  base_name = category_list[mod_index]
-  sub_dir = label_lists['dir']
-  full_path = os.path.join(wav_dir, sub_dir, base_name)
-  return full_path
-# TODo：test the get_wav_path function
-#full_path = get_wav_path(wav_lists, 'id10001', 1, wav_dir=voxceleb_dir, category='training')
-# print(full_path)
+wav_lists = write_wav_tfrecord(VOXCELEB_DIR, TFRECORD_FILE)
+read_from_tfrecord(TFRECORD_FILE)
