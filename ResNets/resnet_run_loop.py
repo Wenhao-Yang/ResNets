@@ -39,7 +39,7 @@ from ResNets.utils.export import export
 from ResNets.utils.logs import hooks_helper
 from ResNets.utils.logs import logger
 # TODO remove or modify
-from ResNets.resnet import imagenet_preprocessing
+# from ResNets.resnet import imagenet_preprocessing
 from ResNets.utils.misc import distribution_utils
 from ResNets.utils.misc import model_helpers
 
@@ -183,9 +183,10 @@ def image_bytes_serving_input_fn(image_shape, dtype=tf.float32):
     height, width, num_channels = image_shape
 
     # TODO remove the image process
-    image = imagenet_preprocessing.preprocess_image(
-        image_bytes, bbox, height, width, num_channels, is_training=False)
-    return image
+    # image = imagenet_preprocessing.preprocess_image(
+    #     image_bytes, bbox, height, width, num_channels, is_training=False)
+
+    return image_bytes
 
   image_bytes_list = tf.compat.v1.placeholder(
       shape=[None], dtype=tf.string, name='input_tensor')
@@ -759,8 +760,9 @@ def define_resnet_flags(resnet_size_choices=None, dynamic_loss_scale=False,
       name='eval_only', default=False,
       help=flags_core.help_wrap('Skip training and only perform evaluation on '
                                 'the latest checkpoint.'))
+  # TODO: change the comments
   flags.DEFINE_boolean(
-      name='image_bytes_as_serving_input', default=False,
+      name='spect_bytes_as_serving_input', default=False,
       help=flags_core.help_wrap(
           'If True exports savedmodel with serving signature that accepts '
           'JPEG image bytes instead of a fixed size [HxWxC] tensor that '

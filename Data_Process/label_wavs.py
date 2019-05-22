@@ -30,7 +30,13 @@ from Data_Process import GenrateSpectrum
 
 MAX_NUM_WAVS_PER_SPK = 2 ** 27 - 1  # ~134M
 VOXCELEB_DIR = '../Dataset/wav'
-TFRECORD_FILE = 'wav.tfrecord'
+TFRECORD_FILE = '../Dataset/wav.tfrecord'
+
+TRAIN_VOXCELEB_DIR = '/data/voxceleb1/vox1_dev_wav'
+TEST_VOXCELEB_DIR = '/data/voxceleb1/vox1_test_wav'
+TRAIN_TFRECORD_FILE = 'wav.tfrecord'
+TEST_TFRECORD_FILE = 'train_wav.bin'
+
 
 def ensure_dir_exists(dir_name):
   """Makes sure the folder exists on disk.
@@ -116,7 +122,6 @@ def create_wav_list(wav_dir, test_precentage, validation_percentage):
         }
         return result
 
-
 # Create wav files list for TFRecord in Tensorflow tutorials
 def _bytes_feature(value):
   """Returns a bytes_list from a string / byte."""
@@ -194,6 +199,8 @@ def read_from_tfrecord(tfrecord_path):
         return tf.parse_single_example(example_proto, wav_feature_description)
 
     parsed_spect_dataset = raw_wav_dataset.map(_parse_spect_function)
+
+    #return parsed_spect_dataset
 
     for spect in parsed_spect_dataset:
         spectrugram = spect['spect'].numpy()

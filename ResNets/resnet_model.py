@@ -420,6 +420,8 @@ class Model(object):
     self.kernel_size = kernel_size
     self.conv_stride = conv_stride
     self.first_pool_size = first_pool_size
+    # Set to be 1 for avg_pooling size
+    self.avg_pool_size = 1
     self.first_pool_stride = first_pool_stride
     self.block_sizes = block_sizes
     self.block_strides = block_strides
@@ -519,13 +521,26 @@ class Model(object):
             data_format=self.data_format)
         inputs = tf.identity(inputs, 'initial_max_pool')
 
+      # TODO the layer define should be modified.
       for i, num_blocks in enumerate(self.block_sizes):
         num_filters = self.num_filters * (2**i)
         inputs = block_layer(
             inputs=inputs, filters=num_filters, bottleneck=self.bottleneck,
             block_fn=self.block_fn, blocks=num_blocks,
             strides=self.block_strides[i], training=training,
-            name='block_layer{}'.format(i + 1), data_format=self.data_format)
+            name='block_layer{}_1'.format(i + 1), data_format=self.data_format)
+
+        inputs = block_layer(
+            inputs=inputs, filters=num_filters, bottleneck=self.bottleneck,
+            block_fn=self.block_fn, blocks=num_blocks,
+            strides=self.block_strides[i], training=training,
+            name='block_layer{}_2'.format(i + 1), data_format=self.data_format)
+      # TODO need to decide if we should define avg_pooling and fc layer here
+      inputs = tf.compat.v1.layers.average_pooling2d(
+          inputs=inputs, pool_size=self.avg_pool_size,
+          strides=self.avg_pool_size, padding='SAME',
+          data_format=self.data_format)
+      inputs = tf.identity(inputs, 'last_avg_pool')
 
       # Only apply the BN and ReLU for model that does pre_activation in each
       # building/bottleneck block, eg resnet V2.
@@ -533,8 +548,7 @@ class Model(object):
         inputs = batch_norm(inputs, training, self.data_format)
         inputs = tf.nn.relu(inputs)
 
-      # The current top layer has shape
-      # `batch_size x pool_size x pool_size x final_size`.
+      # The current top layer has shape `batch_size x pool_size x pool_size x final_size`.
       # ResNet does an Average Pooling layer over pool_size,
       # but that is the same as doing a reduce_mean. We do a reduce_mean
       # here because it performs better than AveragePooling2D.
