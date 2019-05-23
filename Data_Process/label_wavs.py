@@ -150,13 +150,14 @@ def feature_map(label, value):
 # Create tfrecord file for all wav files, the data format will be {label:lebel, spectrugram: spec}
 def write_wav_tfrecord(wav_dir, tfrecord_file):
     if os.path.exists(tfrecord_file):
-        return "File already existed!"
+        print("File already existed!")
     data_root = pathlib.Path(wav_dir)
 
     all_wav_path = list(data_root.glob('*/*/*.wav'))
     all_wav_path = [str(path) for path in all_wav_path]
 
     spk_label = sorted(item.name for item in data_root.glob('*/') if item.is_dir())
+    print(len(spk_label))
 
     # Add index for all speakers label
     label_to_index = dict((name, index) for index, name in enumerate(spk_label))

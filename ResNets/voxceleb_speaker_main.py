@@ -22,7 +22,7 @@ from ResNets.utils.logs import logger
 HEIGHT = 300        # The height of spectrugram array
 WIDTH = 513         # The width of spectrugram array
 NUM_CHANNELS = 1
-NUM_CLASSES = 1251  # TODO 1251 is the total number of spks in Voxceleb1
+NUM_CLASSES = 6  # TODO 1251 is the total number of spks in Voxceleb1
 DATASET_NAME = 'VOXCELEB1'
 ########################################
 # Data Processing
@@ -243,7 +243,7 @@ def define_resnet_flags():
                           resnet_size='18',
                           train_epochs=5,
                           epochs_between_evals=1,
-                          batch_size=128,
+                          batch_size=8,
                           spect_bytes_as_serving_input=False)
 
 
