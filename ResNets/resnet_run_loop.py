@@ -106,10 +106,24 @@ def process_record_dataset(dataset,
   # Repeats the dataset for the number of epochs to train.
   dataset = dataset.repeat(num_epochs)
 
+  wav_feature_description = {
+      'label': tf.FixedLenFeature([], tf.int64),
+      'spect': tf.FixedLenFeature([], tf.string),
+  }
+
+  def _parse_spect_function(example_proto):
+      # Parse the input tf.Example proto using the dictionary above.
+      return tf.parse_single_example(example_proto, wav_feature_description)
+
+  dataset = dataset.map(_parse_spect_function)
+
   # Parses the raw records into images and labels.
   dataset = dataset.map(
       lambda value: parse_record_fn(value, is_training, dtype),
       num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
+
+
   dataset = dataset.batch(batch_size, drop_remainder=drop_remainder)
 
   # Operations between the final prefetch and the get_next call to the iterator
@@ -186,7 +200,7 @@ def image_bytes_serving_input_fn(image_shape, dtype=tf.float32):
     # image = imagenet_preprocessing.preprocess_image(
     #     image_bytes, bbox, height, width, num_channels, is_training=False)
 
-    return image_bytes
+    return image_bytes.numpy()
 
   image_bytes_list = tf.compat.v1.placeholder(
       shape=[None], dtype=tf.string, name='input_tensor')

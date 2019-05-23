@@ -46,16 +46,28 @@ def get_filenames(is_training, data_dir):
 
 def parse_record(raw_record, is_training, dtype):
     """Parse Voxceleb wav spectrugrams and label from a raw record"""
-    record_vector = tf.io.decode_raw(raw_record, tf.uint8)
+    # wav_feature_description = {
+    #     'label': tf.FixedLenFeature([], tf.int64),
+    #     'spect': tf.FixedLenFeature([], tf.string),
+    # }
+    #
+    # def _parse_spect_function(example_proto):
+    #     # Parse the input tf.Example proto using the dictionary above.
+    #     return tf.parse_single_example(example_proto, wav_feature_description)
+    #
+    # record_vector = _parse_spect_function(raw_record)
+    label = raw_record['label']
+
+    spect = tf.io.decode_raw(raw_record['spect'], tf.int32)
 
     # The first byte represents the label, which we convert from uint8 to int32
     # and then to one-hot.
-    label = tf.cast(record_vector[0], tf.int32)
+    label = tf.cast(label, tf.int32)
 
 
     # The remaining bytes after the label represent the image, which we reshape
     # from [depth * height * width] to [depth, height, width].
-    depth_major = tf.reshape(record_vector[1:],
+    depth_major = tf.reshape(spect,
                              [NUM_CHANNELS, HEIGHT, WIDTH])
 
     # Convert from [depth, height, width] to [height, width, depth], and cast as
@@ -223,39 +235,44 @@ def ResNet_model_fn(features, labels, mode, params):
 
 
 def define_resnet_flags():
-  resnet_run_loop.define_resnet_flags()
-  flags.adopt_module_key_flags(resnet_run_loop)
-  flags_core.set_defaults(data_dir='../Dataset',
+    # Define the flags during the running
+    resnet_run_loop.define_resnet_flags()
+    flags.adopt_module_key_flags(resnet_run_loop)
+    flags_core.set_defaults(data_dir='../Dataset',
                           model_dir='model',
-                          resnet_size='56',
-                          train_epochs=182,
-                          epochs_between_evals=10,
+                          resnet_size='18',
+                          train_epochs=5,
+                          epochs_between_evals=1,
                           batch_size=128,
                           spect_bytes_as_serving_input=False)
 
 
 def run_resnet(flags_obj):
-  """Run ResNet training and eval loop.
-  Args:
+    """Run ResNet training and eval loop.
+    Args:
     flags_obj: An object containing parsed flag values.
-  Returns:
+    Returns:
     Dictionary of results. Including final accuracy.
-  """
-  # TODO should be change for adapting VOXCELEB
-  if flags_obj.spect_bytes_as_serving_input:
-    tf.compat.v1.logging.fatal(
-        '--spect_bytes_as_serving_input cannot be set to True for VOXCELEB. '
-        'This flag is only applicable to ImageNet.')
-    return
+    """
+    # The flag that indicates the input is bytes
+    if flags_obj.spect_bytes_as_serving_input:
+        tf.compat.v1.logging.fatal(
+            '--spect_bytes_as_serving_input cannot be set to True for VOXCELEB. '
+            'This flag is only applicable to ImageNet.')
+        return
 
-  input_function = (flags_obj.use_synthetic_data and
+    # Define input function for data input
+    # If the use_synthetic_data flag is True, then use the synth_input_fn to provide input data.
+    # Otherwise, input_fn gives input data.
+    input_function = (flags_obj.use_synthetic_data and
                     get_synth_input_fn(flags_core.get_tf_dtype(flags_obj)) or
                     input_fn)
-  result = resnet_run_loop.resnet_main(
+
+    result = resnet_run_loop.resnet_main(
       flags_obj, ResNet_model_fn, input_function, DATASET_NAME,
       shape=[HEIGHT, WIDTH, NUM_CHANNELS])
 
-  return result
+    return result
 
 
 def main(_):

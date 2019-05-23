@@ -202,9 +202,10 @@ def read_from_tfrecord(tfrecord_path):
 
     #return parsed_spect_dataset
 
-    for spect in parsed_spect_dataset:
-        spectrugram = spect['spect'].numpy()
-        display.display(display.Image(data=spectrugram))
+    # for spect in parsed_spect_dataset:
+    #     spectrugram = spect['spect'].numpy()
+    #     label = spect['label']
+    #     display.display(display.Image(data=spectrugram))
 
 wav_lists = write_wav_tfrecord(VOXCELEB_DIR, TFRECORD_FILE)
 read_from_tfrecord(TFRECORD_FILE)
