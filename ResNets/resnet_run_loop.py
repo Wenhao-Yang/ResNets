@@ -28,7 +28,7 @@ import math
 import multiprocessing
 import os
 
-
+os.environ['CUDA_VISIBLE_DEVICES'] = '2, 3'
 # pylint: disable=g-bad-import-order
 from absl import flags
 import tensorflow as tf
@@ -575,9 +575,12 @@ def resnet_main(
   # Creates session config. allow_soft_placement = True, is required for
   # multi-GPU and is not harmful for other modes.
   session_config = tf.compat.v1.ConfigProto(
+      device_count={'GPU': 2,'GPU':3},
       inter_op_parallelism_threads=flags_obj.inter_op_parallelism_threads,
       intra_op_parallelism_threads=flags_obj.intra_op_parallelism_threads,
       allow_soft_placement=True)
+  session_config.gpu_options.per_process_gpu_memory_fraction = 0.5
+
 
   distribution_strategy = distribution_utils.get_distribution_strategy(
       distribution_strategy=flags_obj.distribution_strategy,

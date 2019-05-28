@@ -19,18 +19,19 @@ from absl import flags
 from ResNets.utils.flags import core as flags_core
 from ResNets.utils.logs import logger
 
-HEIGHT = 300        # The height of spectrugram array
-WIDTH = 513         # The width of spectrugram array
+HEIGHT = 513        # The height of spectrugram array
+WIDTH = 300         # The width of spectrugram array
 NUM_CHANNELS = 1
-NUM_CLASSES = 6  # TODO 1251 is the total number of spks in Voxceleb1
+NUM_CLASSES = 1211  # TODO 1251 is the total number of spks in Voxceleb1
 DATASET_NAME = 'VOXCELEB1'
+_SHUFFLE_BUFFER = 6400
 ########################################
 # Data Processing
 ########################################
 # TODO:
 NUM_WAVS = {
-    'train': 1024,
-    'validation': 1024,
+    'train': 118914,
+    'validation': 29728,
 }
 
 def get_filenames(is_training, data_dir):
@@ -58,7 +59,7 @@ def parse_record(raw_record, is_training, dtype):
     # record_vector = _parse_spect_function(raw_record)
     label = raw_record['label']
 
-    spect = tf.io.decode_raw(raw_record['spect'], tf.int32)
+    spect = tf.io.decode_raw(raw_record['spect'], tf.uint8)
 
     # The first byte represents the label, which we convert from uint8 to int32
     # and then to one-hot.
@@ -127,12 +128,15 @@ def input_fn(is_training,
                 input_context.input_pipeline_id, input_context.num_input_pipelines))
         dataset = dataset.shard(input_context.num_input_pipelines,
                                 input_context.input_pipeline_id)
+    #if is_training:
+    # Shuffle the input files
+    #    dataset = dataset.shuffle(buffer_size=_SHUFFLE_BUFFER)
 
     return resnet_run_loop.process_record_dataset(
         dataset=dataset,
         is_training=is_training,
         batch_size=batch_size,
-        shuffle_buffer=NUM_WAVS['train'],
+        shuffle_buffer=_SHUFFLE_BUFFER,
         parse_record_fn=parse_record,
         num_epochs=num_epochs,
         dtype=dtype,
@@ -173,8 +177,8 @@ class ResNetModel(resnet_model.Model):
     #   raise ValueError('resnet_size must be 6n + 2:', resnet_size)
 
     # TODO the block should be 8 for ResNet-18
-    # num_blocks = (resnet_size - 2) // 6
-    num_blocks = 4
+    num_blocks = (resnet_size - 2) // 6
+    # num_blocks = 4
 
     # TODO define of ResNet is not correct.
     super(ResNetModel, self).__init__(
@@ -240,10 +244,10 @@ def define_resnet_flags():
     flags.adopt_module_key_flags(resnet_run_loop)
     flags_core.set_defaults(data_dir='../Dataset',
                           model_dir='model',
-                          resnet_size='18',
-                          train_epochs=5,
-                          epochs_between_evals=1,
-                          batch_size=8,
+                          resnet_size='56',
+                          train_epochs=30,
+                          epochs_between_evals=10,
+                          batch_size=64,
                           spect_bytes_as_serving_input=False)
 
 

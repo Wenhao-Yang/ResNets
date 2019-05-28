@@ -33,6 +33,10 @@ def GenerateSpect(wav_path, windowsize=25, stride=20, nfft=1024):
 
         # raise ValueError("The dimension of spectrogram is less than 300")
     spectrogram = spectrogram[:, :300]
+    maxCol = np.max(spectrogram,axis=0)
+    spectrogram = np.nan_to_num(spectrogram / maxCol)
+    spectrogram = spectrogram * 255
+    spectrogram = spectrogram.astype(np.uint8)
     return spectrogram
 
 # Plotting the spectrugram:
