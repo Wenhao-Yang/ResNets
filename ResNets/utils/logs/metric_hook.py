@@ -21,7 +21,7 @@ from __future__ import print_function
 import tensorflow as tf  # pylint: disable=g-bad-import-order
 
 
-class LoggingMetricHook(tf.estimator.LoggingTensorHook):
+class LoggingMetricHook(tf.train.LoggingTensorHook):
   """Hook to log benchmark metric information.
 
   This hook is very similar as tf.train.LoggingTensorHook, which logs given

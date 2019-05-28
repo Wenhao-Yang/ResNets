@@ -19,18 +19,18 @@ from absl import flags
 from ResNets.utils.flags import core as flags_core
 from ResNets.utils.logs import logger
 
-HEIGHT = 300        # The height of spectrugram array
-WIDTH = 513         # The width of spectrugram array
+HEIGHT = 513        # The height of spectrugram array
+WIDTH = 300         # The width of spectrugram array
 NUM_CHANNELS = 1
-NUM_CLASSES = 6  # TODO 1251 is the total number of spks in Voxceleb1
+NUM_CLASSES = 1211  # TODO 1251 is the total number of spks in Voxceleb1
 DATASET_NAME = 'VOXCELEB1'
 ########################################
 # Data Processing
 ########################################
 # TODO:
 NUM_WAVS = {
-    'train': 1024,
-    'validation': 1024,
+    'train': 118914,
+    'validation': 29728,
 }
 
 def get_filenames(is_training, data_dir):
@@ -58,7 +58,8 @@ def parse_record(raw_record, is_training, dtype):
     # record_vector = _parse_spect_function(raw_record)
     label = raw_record['label']
 
-    spect = tf.io.decode_raw(raw_record['spect'], tf.int32)
+    spect = tf.io.decode_raw(raw_record['spect'], tf.uint8)
+    print('the shape is ' + str(spect.shape))
 
     # The first byte represents the label, which we convert from uint8 to int32
     # and then to one-hot.
@@ -281,6 +282,6 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
+  tf.logging.set_verbosity(tf.logging.INFO)
   define_resnet_flags()
   absl_app.run(main)

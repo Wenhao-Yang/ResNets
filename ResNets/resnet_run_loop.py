@@ -88,7 +88,7 @@ def process_record_dataset(dataset,
     options.experimental_threading.private_threadpool_size = (
         datasets_num_private_threads)
     dataset = dataset.with_options(options)
-    tf.compat.v1.logging.info('datasets_num_private_threads: %s',
+    tf.logging.info('datasets_num_private_threads: %s',
                               datasets_num_private_threads)
 
   # Disable intra-op parallelism to optimize for throughput instead of latency.
@@ -574,7 +574,7 @@ def resnet_main(
 
   # Creates session config. allow_soft_placement = True, is required for
   # multi-GPU and is not harmful for other modes.
-  session_config = tf.compat.v1.ConfigProto(
+  session_config = tf.ConfigProto(
       inter_op_parallelism_threads=flags_obj.inter_op_parallelism_threads,
       intra_op_parallelism_threads=flags_obj.intra_op_parallelism_threads,
       allow_soft_placement=True)
@@ -691,7 +691,7 @@ def resnet_main(
       schedule[-1] = train_epochs - sum(schedule[:-1])  # over counting.
 
     for cycle_index, num_train_epochs in enumerate(schedule):
-      tf.compat.v1.logging.info('Starting cycle: %d/%d', cycle_index,
+      tf.logging.info('Starting cycle: %d/%d', cycle_index,
                                 int(n_loops))
 
       if num_train_epochs:
