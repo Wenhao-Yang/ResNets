@@ -34,8 +34,8 @@ TFRECORD_FILE = '../Dataset/wav.tfrecord'
 
 TRAIN_VOXCELEB_DIR = '/data/voxceleb1/vox1_dev_wav'
 TEST_VOXCELEB_DIR = '/data/voxceleb1/vox1_test_wav'
-TRAIN_TFRECORD_FILE = 'wav.tfrecord'
-TEST_TFRECORD_FILE = 'train_wav.bin'
+TRAIN_TFRECORD_FILE = 'train.bin'
+TEST_TFRECORD_FILE = 'wav.tfrecord'
 
 
 def ensure_dir_exists(dir_name):
@@ -150,7 +150,7 @@ def feature_map(label, value):
 # Create tfrecord file for all wav files, the data format will be {label:lebel, spectrugram: spec}
 def write_wav_tfrecord(wav_dir, tfrecord_file):
     if os.path.exists(tfrecord_file):
-        print("File already existed!")
+        return("File already existed!")
     data_root = pathlib.Path(wav_dir)
 
     all_wav_path = list(data_root.glob('*/*/*.wav'))
@@ -164,21 +164,21 @@ def write_wav_tfrecord(wav_dir, tfrecord_file):
 
     all_wav_labels = [label_to_index[pathlib.Path(path).parent.parent.name]
                         for path in all_wav_path]
-    wav_spec_list = np.zeros([len(all_wav_labels), 513, 300])
+    # wav_spec_list = np.zeros([len(all_wav_labels), 513, 300])
 
     # wav_path = all_wav_path[0]
     with tf.python_io.TFRecordWriter(tfrecord_file) as writer:
         for index, wav_path in enumerate(all_wav_path):
 
             spec = GenrateSpectrum.GenerateSpect(wav_path)
-            wav_spec_list[index]=spec
+            # wav_spec_list[index]=spec
             spect_str = spec.tostring()
 
             feature_meta = feature_map(all_wav_labels[index], spect_str)
             writer.write(feature_meta.SerializeToString())
 
             # Progress Bar
-            sys.stdout.write("\rProcessing Wav Data: [%s%s] %d%%" % ('#'*int(50*index/len(all_wav_path)), '='*(50 - int(50*index/len(all_wav_path))), 100*index/len(all_wav_path)))
+            sys.stdout.write("\rProcessing Wav Data: [%s%s] %d%% <%d / %d>" % ('#'*int(50*index/len(all_wav_path)), '='*(50 - int(50*index/len(all_wav_path))), 100*index/len(all_wav_path), index, len(all_wav_path)))
             sys.stdout.flush()
 
     # for f0,f1 in feature_dataset:
@@ -208,5 +208,5 @@ def read_from_tfrecord(tfrecord_path):
     #     label = spect['label']
     #     display.display(display.Image(data=spectrugram))
 
-wav_lists = write_wav_tfrecord(VOXCELEB_DIR, TFRECORD_FILE)
-read_from_tfrecord(TFRECORD_FILE)
+# wav_lists = write_wav_tfrecord(TRAIN_VOXCELEB_DIR, TRAIN_TFRECORD_FILE)
+# read_from_tfrecord(TFRECORD_FILE)
