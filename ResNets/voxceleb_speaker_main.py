@@ -60,6 +60,7 @@ def parse_record(raw_record, is_training, dtype):
     label = raw_record['label']
 
     spect = tf.io.decode_raw(raw_record['spect'], tf.uint8)
+    #print('the shape is ' + str(spect.shape))
 
     # The first byte represents the label, which we convert from uint8 to int32
     # and then to one-hot.
@@ -285,6 +286,6 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
+  tf.logging.set_verbosity(tf.logging.INFO)
   define_resnet_flags()
   absl_app.run(main)

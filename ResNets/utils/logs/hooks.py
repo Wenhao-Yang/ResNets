@@ -25,7 +25,7 @@ import tensorflow as tf  # pylint: disable=g-bad-import-order
 from ResNets.utils.logs import logger
 
 
-class ExamplesPerSecondHook(tf.estimator.SessionRunHook):
+class ExamplesPerSecondHook(tf.train.SessionRunHook):
   """Hook to print out examples per second.
 
   Total time is tracked and then divided by the total number of steps

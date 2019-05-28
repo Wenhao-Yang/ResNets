@@ -38,6 +38,8 @@ def GenerateSpect(wav_path, windowsize=25, stride=20, nfft=1024):
     spectrogram = spectrogram * 255
     spectrogram = spectrogram.astype(np.uint8)
     return spectrogram
+    # spectrogram = spectrogram.reshape(513*300)
+
 
 # Plotting the spectrugram:
 
